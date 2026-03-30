@@ -20,7 +20,6 @@ class VBNetDetector:
     def __init__(self):
         self.logger = logger.bind(component="VBNetDetector")
 
-        # VB.net-specific keywords and patterns
         self.vbnet_keywords = {
             'Namespace', 'End Namespace', 'Class', 'End Class',
             'Module', 'End Module', 'Interface', 'End Interface',
@@ -44,14 +43,11 @@ class VBNetDetector:
             'Handles', 'WithEvents', 'AddressOf', 'Alias',
             'Declare', 'Lib', 'Ansi', 'Unicode', 'Auto',
             'MarshalAs', 'DllImport', 'Preserve',
-            'Overloads', 'Overrides', 'Overridable', 'MustOverride',
             'MustInherit', 'NotInheritable', 'Partial',
             'Custom', 'Narrowing', 'Widening', 'Operator',
-            'Converter', 'Widening', 'Narrowing', 'DirectCast',
-            'TryCast', 'CType', 'DirectCast', 'TryCast'
+            'DirectCast', 'TryCast', 'CType',
         }
 
-        # VB.net-specific attributes
         self.vbnet_attributes = {
             'Obsolete', 'Conditional', 'DebuggerHidden',
             'DebuggerStepThrough', 'CallerMemberName',
@@ -63,7 +59,6 @@ class VBNetDetector:
             'FieldOffset', 'MarshalAs', 'DllImport', 'StructLayout'
         }
 
-        # Framework detection patterns
         self.framework_patterns = {
             'WinForms': [
                 r'System\.Windows\.Forms',
@@ -105,7 +100,6 @@ class VBNetDetector:
             ]
         }
 
-        # Data access patterns
         self.data_access_patterns = {
             'ADO.NET': [
                 r'System\.Data',
@@ -131,29 +125,20 @@ class VBNetDetector:
         }
 
     def detect_language(self, file_path: Path, content: str) -> bool:
-        """
-        Detect if a file is VB.net based on content analysis.
-        Returns True if VB.net is detected.
-        """
-        # Check file extension first
+        """Detect if a file is VB.net based on extension and content analysis."""
         if file_path.suffix.lower() in ['.vb', '.vbproj', '.sln']:
             return True
 
-        # For .vb files, check content
         if file_path.suffix.lower() == '.vb':
-            # Count VB.net keywords
             keyword_matches = 0
             for keyword in self.vbnet_keywords:
-                # Use word boundaries to avoid partial matches
                 pattern = rf'\b{re.escape(keyword)}\b'
                 matches = len(re.findall(pattern, content, re.IGNORECASE))
                 keyword_matches += matches
 
-            # If we find multiple VB.net keywords, it's likely VB.net
             if keyword_matches >= 3:
                 return True
 
-            # Check for VB.net-specific patterns
             vbnet_patterns = [
                 r'^\s*Namespace\s+\w+',
                 r'^\s*End\s+Namespace',
@@ -185,39 +170,19 @@ class VBNetDetector:
         return False
 
     def detect_frameworks(self, content: str, file_paths: List[str] = None) -> Set[str]:
-        """
-        Detect VB.net frameworks used in the codebase.
-        Returns a set of detected framework names.
-        """
+        """Detect VB.net frameworks used in the codebase."""
         detected = set()
 
-        # Check content for framework patterns
         for framework, patterns in self.framework_patterns.items():
             for pattern in patterns:
                 if re.search(pattern, content, re.IGNORECASE):
                     detected.add(framework)
-                    break  # Found this framework, no need to check other patterns
-
-        # If we have file paths, check for project files
-        if file_paths:
-            for file_path in file_paths:
-                path_obj = Path(file_path)
-                if path_obj.suffix.lower() == '.vbproj':
-                    # Read .vbproj file to detect frameworks
-                    try:
-                        # This would be implemented to read the actual file
-                        # For now, we'll rely on content scanning above
-                        pass
-                    except Exception:
-                        pass
+                    break
 
         return detected
 
     def detect_data_access(self, content: str) -> Set[str]:
-        """
-        Detect data access technologies used in the codebase.
-        Returns a set of detected data access technologies.
-        """
+        """Detect data access technologies used in the codebase."""
         detected = set()
 
         for tech, patterns in self.data_access_patterns.items():
@@ -229,14 +194,9 @@ class VBNetDetector:
         return detected
 
     def detect_architectural_patterns(self, file_structure: Dict[str, List[str]]) -> Set[str]:
-        """
-        Detect architectural patterns based on folder/file structure.
-        file_structure: dict mapping folder names to lists of files in those folders
-        Returns a set of detected architectural patterns.
-        """
+        """Detect architectural patterns based on folder/file structure."""
         detected = set()
 
-        # Common VB.net architectural patterns
         patterns = {
             'DAL': ['dal', 'dataaccess', 'data access', 'repository', 'repositories'],
             'BLL': ['bll', 'businesslogic', 'business logic', 'service', 'services', 'manager', 'managers'],
@@ -247,13 +207,11 @@ class VBNetDetector:
             'Providers': ['providers', 'provider']
         }
 
-        # Normalize folder names for comparison
         normalized_structure = {}
         for folder, files in file_structure.items():
             normalized_folder = folder.lower().replace(' ', '').replace('-', '').replace('_', '')
             normalized_structure[normalized_folder] = [f.lower() for f in files]
 
-        # Check for pattern matches
         for pattern_name, keywords in patterns.items():
             for keyword in keywords:
                 if keyword in normalized_structure:
@@ -263,10 +221,7 @@ class VBNetDetector:
         return detected
 
     def analyze_vbnet_file(self, file_path: Path, content: str) -> Dict[str, any]:
-        """
-        Perform comprehensive analysis of a VB.net file.
-        Returns a dictionary with analysis results.
-        """
+        """Perform comprehensive analysis of a VB.net file."""
         analysis = {
             'is_vbnet': self.detect_language(file_path, content),
             'frameworks': set(),
@@ -288,7 +243,6 @@ class VBNetDetector:
         lines = content.split('\n')
         analysis['line_count'] = len(lines)
 
-        # Count different types of lines
         for line in lines:
             stripped = line.strip()
             if not stripped:
@@ -298,25 +252,22 @@ class VBNetDetector:
             else:
                 analysis['code_lines'] += 1
 
-        # Find VB.net keywords
         for keyword in self.vbnet_keywords:
             pattern = rf'\b{re.escape(keyword)}\b'
             if re.search(pattern, content, re.IGNORECASE):
                 analysis['keywords_found'].append(keyword)
 
-        # Find VB.net attributes
+        # Fix: was re.escapeAttribute) — corrected to re.escape(attribute)
         for attribute in self.vbnet_attributes:
-            pattern = rf'<{re.escapeAttribute)}(?:\([^>]*\))?>'
+            pattern = rf'<{re.escape(attribute)}(?:\([^>]*\))?>'
             if re.search(pattern, content, re.IGNORECASE):
                 analysis['attributes_found'].append(attribute)
 
-        # Check for structural elements
         analysis['has_namespace'] = bool(re.search(r'\bNamespace\s+\w+', content))
         analysis['has_class'] = bool(re.search(r'\bClass\s+\w+', content))
         analysis['has_module'] = bool(re.search(r'\bModule\s+\w+', content))
         analysis['has_interface'] = bool(re.search(r'\bInterface\s+\w+', content))
 
-        # Detect frameworks and data access
         analysis['frameworks'] = self.detect_frameworks(content)
         analysis['data_access'] = self.detect_data_access(content)
 
